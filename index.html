@@ -182,9 +182,24 @@
     margin-bottom: 24px;
     font-size: 1rem;
   }
-  .cl-pair { display: block; margin-bottom: 2px; }
-  .cl-chord-row { font-family: monospace; white-space: pre; line-height: 1.8; font-size: .95rem; }
-  .cl-lyric-row { line-height: 1.6; white-space: pre-wrap; }
+  /* Cada linha da cifra = segmentos inline empilhados (acorde em cima, sílaba embaixo) */
+  .cl-pair { display: block; margin-bottom: 8px; }
+  .cl-seg {
+    display: inline-block;
+    vertical-align: bottom;
+    text-align: left;
+  }
+  .cl-seg-chord {
+    display: block;
+    min-height: 1.6em;  /* reserva espaço mesmo quando não há acorde */
+    line-height: 1.6;
+  }
+  .cl-seg-text {
+    display: block;
+    white-space: pre;
+    line-height: 1.8;
+    font-size: 1rem;
+  }
 
   .chord-token {
     display: inline-block;
@@ -192,12 +207,11 @@
     border-radius: 6px;
     padding: 1px 6px;
     font-weight: 700;
-    font-size: .85rem;
-    font-family: monospace;
+    font-size: .82rem;
+    font-family: inherit;
     border: 1.5px solid var(--surface2);
     transition: background .3s, border-color .3s;
     cursor: default;
-    vertical-align: baseline;
     white-space: nowrap;
   }
   .chord-token.hidden-chord { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -924,19 +938,38 @@ function chordTokenHTML(idx) {
   return `<span class="${cls}">${label}</span>`;
 }
 
+function buildSegments(chords, lyric) {
+  // Divide a linha de letra em segmentos alinhados a cada acorde
+  const segs = [];
+  let pos = 0;
+  for (let i = 0; i < chords.length; i++) {
+    const { chord, col, idx } = chords[i];
+    const nextCol = i + 1 < chords.length ? chords[i + 1].col : lyric.length;
+    // Texto antes deste acorde (sem acorde associado)
+    if (col > pos) segs.push({ idx: null, text: lyric.slice(pos, col) });
+    // Segmento deste acorde: texto até o próximo acorde
+    const text = lyric.slice(col, nextCol) || ' ';
+    segs.push({ idx, text });
+    pos = nextCol;
+  }
+  // Texto restante após o último acorde
+  if (pos < lyric.length) segs.push({ idx: null, text: lyric.slice(pos) });
+  return segs;
+}
+
 function renderLyrics() {
   document.getElementById('lyricsBox').innerHTML = state.blocks.map(block => {
     if (block.type === 'text') return `<span>${block.value.replace(/\n/g,'<br>')}</span>`;
-    let chordRow = '', cursor = 0;
-    for (const { chord, col, idx } of block.chords) {
-      chordRow += ' '.repeat(Math.max(0, col - cursor));
-      chordRow += chordTokenHTML(idx);
-      cursor = col + chord.length;
-    }
-    return `<div class="cl-pair">
-      <div class="cl-chord-row">${chordRow}</div>
-      <div class="cl-lyric-row">${block.lyric || '&nbsp;'}</div>
-    </div>`;
+
+    const segs = buildSegments(block.chords, block.lyric || '');
+    const html = segs.map(({ idx, text }) => {
+      const chordHTML = idx !== null
+        ? `<span class="cl-seg-chord">${chordTokenHTML(idx)}</span>`
+        : `<span class="cl-seg-chord"></span>`;
+      return `<span class="cl-seg">${chordHTML}<span class="cl-seg-text">${text}</span></span>`;
+    }).join('');
+
+    return `<div class="cl-pair">${html}</div>`;
   }).join('');
 }
 
