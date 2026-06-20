@@ -349,6 +349,13 @@
 
   <!-- BIBLIOTECA -->
   <div class="tab-pane active" id="tab-lib">
+    <div style="display:flex; gap:10px; margin-bottom:16px;">
+      <button class="btn btn-secondary" style="flex:1;font-size:.85rem;padding:9px" onclick="exportLibrary()">📤 Exportar biblioteca</button>
+      <label class="btn btn-secondary" style="flex:1;font-size:.85rem;padding:9px;cursor:pointer;text-align:center;margin:0">
+        📥 Importar biblioteca
+        <input type="file" accept=".json" style="display:none" onchange="importLibrary(this)">
+      </label>
+    </div>
     <div id="libList"></div>
   </div>
 
@@ -659,6 +666,39 @@ function libDelete(id) {
 
 function libUpdate(id, patch) {
   libSave(libLoad().map(s => s.id === id ? { ...s, ...patch } : s));
+}
+
+function exportLibrary() {
+  const songs = libLoad();
+  if (songs.length === 0) { alert('A biblioteca está vazia.'); return; }
+  const blob = new Blob([JSON.stringify(songs, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'biblioteca-campo-harmonico.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importLibrary(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error();
+      const existing = libLoad();
+      const existingIds = new Set(existing.map(s => s.id));
+      const news = imported.filter(s => !existingIds.has(s.id));
+      libSave([...existing, ...news]);
+      renderLibrary();
+      alert(`✓ ${news.length} música(s) importada(s). ${imported.length - news.length} já existiam.`);
+    } catch {
+      alert('Arquivo inválido. Use apenas arquivos exportados por este jogo.');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function renderLibrary() {
