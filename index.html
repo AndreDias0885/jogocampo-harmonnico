@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campo Harmônico — Jogo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --radius: 12px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+  h2 { font-size: 1.2rem; font-weight: 700; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── SETUP ── */
+  #setup { max-width: 680px; margin: 0 auto; }
+  .setup-header { text-align: center; margin-bottom: 24px; }
+  .setup-header p { color: var(--muted); margin-top: 6px; }
+
+  label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; margin-top: 18px; text-transform: uppercase; letter-spacing: .05em; }
+
+  input[type=text], select, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--surface2);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type=text]:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 180px; font-family: monospace; font-size: .9rem; }
+
+  .row { display: flex; gap: 12px; }
+  .row > * { flex: 1; }
+
+  .players-config { margin-top: 12px; display: flex; gap: 12px; }
+  .player-field { flex: 1; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none; border-radius: var(--radius);
+    font-size: 1rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: opacity .15s, transform .1s;
+  }
+  .btn:hover { opacity: .9; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; width: 100%; margin-top: 24px; padding: 14px; font-size: 1.1rem; }
+  .btn-secondary { background: var(--surface2); color: var(--text); }
+
+  .error-msg { background: #450a0a; border: 1px solid var(--red); border-radius: var(--radius); padding: 10px 14px; color: #fca5a5; font-size: .9rem; margin-top: 12px; display: none; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 24px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: none; border: none;
+    color: var(--muted);
+    font-size: .95rem; font-weight: 700; font-family: inherit;
+    padding: 10px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tab-btn.active { background: var(--accent); color: #fff; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── BIBLIOTECA ── */
+  .lib-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: .95rem;
+  }
+  .lib-empty span { display: block; font-size: 2.5rem; margin-bottom: 10px; }
+
+  .song-list { display: flex; flex-direction: column; gap: 10px; }
+  .song-card {
+    background: var(--surface);
+    border: 1.5px solid var(--surface2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    transition: border-color .2s;
+  }
+  .song-card:hover { border-color: var(--accent2); }
+  .song-card-info { flex: 1; min-width: 0; cursor: pointer; }
+  .song-card-name { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .song-card-meta { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+  .song-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-icon {
+    background: var(--surface2); border: none; color: var(--text);
+    border-radius: 8px; padding: 6px 10px;
+    font-size: .8rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn-icon:hover { background: var(--accent); color: #fff; }
+  .btn-icon.danger:hover { background: var(--red); }
+
+  /* ── MODAL QUICK-START ── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%; max-width: 440px;
+    border: 1.5px solid var(--surface2);
+  }
+  .modal h2 { margin-bottom: 4px; }
+  .modal-sub { color: var(--muted); font-size: .85rem; margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions .btn { flex: 1; margin-top: 0; }
+
+  /* ── GAME ── */
+  #game { max-width: 960px; margin: 0 auto; }
+
+  .game-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+  }
+  .game-title { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+  .game-meta { color: var(--muted); font-size: .85rem; }
+
+  .scoreboard { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .score-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    flex: 1; min-width: 100px;
+    border: 2px solid transparent;
+  }
+  .score-card .sc-name { font-size: .8rem; color: var(--muted); font-weight: 600; }
+  .score-card .sc-pts { font-size: 1.6rem; font-weight: 800; }
+
+  .lyrics-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 24px;
+    font-size: 1rem;
+  }
+  .cl-pair { display: block; margin-bottom: 2px; }
+  .cl-chord-row { font-family: monospace; white-space: pre; line-height: 1.8; font-size: .95rem; }
+  .cl-lyric-row { line-height: 1.6; white-space: pre-wrap; }
+
+  .chord-token {
+    display: inline-block;
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-weight: 700;
+    font-size: .85rem;
+    font-family: monospace;
+    border: 1.5px solid var(--surface2);
+    transition: background .3s, border-color .3s;
+    cursor: default;
+    vertical-align: baseline;
+    white-space: nowrap;
+  }
+  .chord-token.hidden-chord { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chord-token.current-chord { background: var(--yellow); border-color: var(--yellow); color: #000; animation: pulse 1s infinite; }
+  .chord-token.revealed { background: var(--green); border-color: var(--green); color: #fff; animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+  }
+
+  .player-areas { display: flex; gap: 16px; flex-wrap: wrap; }
+  .player-area {
+    flex: 1; min-width: 200px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 2px solid var(--surface2);
+  }
+  .player-area.locked { opacity: .6; }
+  .player-area .pa-name {
+    font-size: .85rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .06em;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pa-status { font-size: .75rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .pa-status.waiting { background: var(--surface2); color: var(--muted); }
+  .pa-status.chosen  { background: #164e63; color: #67e8f9; }
+  .pa-status.correct { background: #14532d; color: #86efac; }
+  .pa-status.wrong   { background: #450a0a; color: #fca5a5; }
+
+  .options-grid { display: flex; flex-direction: column; gap: 8px; }
+  .option-btn {
+    background: var(--surface2);
+    border: 2px solid var(--surface2);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 1rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; text-align: center;
+    transition: background .15s, border-color .15s, transform .1s;
+  }
+  .option-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); transform: scale(1.02); }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.selected      { border-color: var(--accent2); background: #312e81; }
+  .option-btn.correct-answer{ background: var(--green); border-color: var(--green); color: #fff; }
+  .option-btn.wrong-answer  { background: var(--red);   border-color: var(--red);   color: #fff; }
+
+  .reveal-info { text-align: center; margin-top: 20px; color: var(--muted); font-size: .9rem; }
+  .reveal-info strong { color: var(--text); }
+  .next-btn-wrap { text-align: center; margin-top: 20px; }
+  .btn-next { background: var(--accent); color: #fff; padding: 12px 36px; font-size: 1rem; }
+
+  /* ── RESULT ── */
+  #result { max-width: 500px; margin: 60px auto; text-align: center; }
+  .result-title { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+  .result-sub { color: var(--muted); margin-bottom: 32px; }
+
+  .ranking { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .ranking li {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 1.1rem; font-weight: 700;
+  }
+  .ranking li:first-child { border: 2px solid var(--yellow); }
+  .rank-pos { font-size: 1.4rem; width: 36px; }
+  .rank-name { flex: 1; text-align: left; }
+  .rank-pts { color: var(--accent2); }
+
+  .result-actions { display: flex; flex-direction: column; gap: 10px; }
+  .btn-restart { background: var(--accent); color: #fff; padding: 12px 32px; }
+  .btn-save-song { background: var(--surface2); color: var(--text); padding: 11px 32px; border: 1.5px solid var(--surface2); }
+  .btn-save-song:hover { border-color: var(--accent2); }
+  #saveConfirm { color: var(--green); font-size: .9rem; margin-top: 4px; display: none; }
+
+  /* ── YOUTUBE PLAYER ── */
+  .yt-panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    border: 1.5px solid var(--surface2);
+  }
+  .yt-embed-wrap {
+    position: relative; width: 100%; padding-top: 30%;
+    background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 12px;
+  }
+  .yt-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+  .yt-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .yt-time { font-family: monospace; font-size: .9rem; color: var(--muted); min-width: 90px; }
+  .yt-seek {
+    flex: 1; min-width: 120px;
+    -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 2px;
+    background: var(--surface2); outline: none; cursor: pointer;
+  }
+  .yt-seek::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent2); cursor: pointer;
+  }
+  .yt-ab-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--surface2);
+    font-size: .82rem;
+  }
+  .yt-ab-label { color: var(--muted); font-weight: 600; }
+  .yt-ab-time {
+    font-family: monospace; background: var(--surface2);
+    border-radius: 6px; padding: 2px 8px; min-width: 52px;
+    text-align: center; font-size: .82rem;
+  }
+  .yt-ab-time.set { color: var(--accent2); }
+  .btn-yt {
+    background: var(--surface2); color: var(--text);
+    border: none; border-radius: 8px; padding: 6px 12px;
+    font-size: .82rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: background .15s;
+  }
+  .btn-yt:hover { background: var(--accent); color: #fff; }
+  .btn-yt.active { background: var(--accent); color: #fff; }
+  .btn-play-pause {
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px; padding: 7px 16px;
+    font-size: 1rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; min-width: 44px;
+  }
+  .btn-play-pause:hover { opacity: .85; }
+  .yt-no-video { color: var(--muted); font-size: .9rem; text-align: center; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ SETUP SCREEN ══════════════════ -->
+<div id="setup" class="screen active">
+  <div class="setup-header">
+    <h1>🎵 Campo Harmônico</h1>
+    <p>Jogo educativo de acordes para a sala de aula</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('lib')">📚 Biblioteca</button>
+    <button class="tab-btn" onclick="switchTab('new')">➕ Nova música</button>
+  </div>
+
+  <!-- BIBLIOTECA -->
+  <div class="tab-pane active" id="tab-lib">
+    <div id="libList"></div>
+  </div>
+
+  <!-- NOVA MÚSICA -->
+  <div class="tab-pane" id="tab-new">
+    <label>Nome da música (para salvar na biblioteca)</label>
+    <input type="text" id="songName" placeholder="Ex: Porque Ele Vive">
+
+    <label>Link do YouTube (opcional)</label>
+    <input type="text" id="ytUrl" placeholder="https://www.youtube.com/watch?v=...">
+
+    <label>Cifra (formato CifraClub — cole direto do site)</label>
+    <textarea id="cifra" placeholder="Am          F
+Quando o sol se põe no mar
+C           G
+Eu fico aqui a te esperar"></textarea>
+
+    <div class="row">
+      <div>
+        <label>Tom da música</label>
+        <select id="tom"><option value="">— selecionar —</option>
+          <option>C</option><option>C#</option><option>Db</option>
+          <option>D</option><option>D#</option><option>Eb</option>
+          <option>E</option><option>F</option><option>F#</option>
+          <option>Gb</option><option>G</option><option>G#</option>
+          <option>Ab</option><option>A</option><option>A#</option>
+          <option>Bb</option><option>B</option>
+        </select>
+      </div>
+      <div>
+        <label>Número de jogadores</label>
+        <select id="numPlayers" onchange="updatePlayerFields()">
+          <option value="1">1 jogador</option>
+          <option value="2" selected>2 jogadores</option>
+          <option value="3">3 jogadores</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Nomes dos jogadores</label>
+    <div class="players-config">
+      <div class="player-field"><input type="text" id="p0" placeholder="Jogador 1" value="Jogador 1"></div>
+      <div class="player-field"><input type="text" id="p1" placeholder="Jogador 2" value="Jogador 2"></div>
+      <div class="player-field" id="p2wrap" style="display:none"><input type="text" id="p2" placeholder="Jogador 3" value="Jogador 3"></div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div style="display:flex; gap:10px; margin-top:24px;">
+      <button class="btn btn-secondary" style="flex:1" onclick="saveToLibraryFromForm()">💾 Salvar na biblioteca</button>
+      <button class="btn btn-primary" style="flex:2; margin-top:0" onclick="startGameFromForm()">▶ Iniciar Jogo</button>
+    </div>
+    <p id="formSaveConfirm" style="display:none; color:var(--green); font-size:.9rem; margin-top:8px; text-align:center;">✓ Música salva na biblioteca!</p>
+  </div>
+</div>
+
+<!-- ══════════════════ MODAL QUICK-START ══════════════════ -->
+<div class="modal-backdrop" id="quickModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2 id="modalTitle">Música</h2>
+    <p class="modal-sub" id="modalSub"></p>
+
+    <div class="row">
+      <div>
+        <label>Tom</label>
+        <select id="modalTom"><option value="">— selecionar —</option>
+          <option>C</option><option>C#</option><option>Db</option>
+          <option>D</option><option>D#</option><option>Eb</option>
+          <option>E</option><option>F</option><option>F#</option>
+          <option>Gb</option><option>G</option><option>G#</option>
+          <option>Ab</option><option>A</option><option>A#</option>
+          <option>Bb</option><option>B</option>
+        </select>
+      </div>
+      <div>
+        <label>Jogadores</label>
+        <select id="modalPlayers" onchange="updateModalPlayerFields()">
+          <option value="1">1 jogador</option>
+          <option value="2" selected>2 jogadores</option>
+          <option value="3">3 jogadores</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Nomes</label>
+    <div class="players-config">
+      <div class="player-field"><input type="text" id="mp0" placeholder="Jogador 1" value="Jogador 1"></div>
+      <div class="player-field"><input type="text" id="mp1" placeholder="Jogador 2" value="Jogador 2"></div>
+      <div class="player-field" id="mp2wrap" style="display:none"><input type="text" id="mp2" placeholder="Jogador 3" value="Jogador 3"></div>
+    </div>
+
+    <div class="error-msg" id="modalError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" style="margin-top:0" onclick="startGameFromModal()">▶ Jogar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ GAME SCREEN ══════════════════ -->
+<div id="game" class="screen">
+  <div class="game-header">
+    <div>
+      <div class="game-title" id="gameTitle">Campo Harmônico</div>
+      <div class="game-meta" id="gameMeta"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="goSetup()" style="font-size:.85rem;padding:8px 16px;">← Voltar</button>
+  </div>
+
+  <div class="scoreboard" id="scoreboard"></div>
+
+  <div class="yt-panel" id="ytPanel" style="display:none">
+    <div class="yt-embed-wrap"><div id="ytPlayer"></div></div>
+    <div class="yt-controls">
+      <button class="btn-play-pause" id="btnPlayPause" onclick="ytTogglePlay()">▶</button>
+      <span class="yt-time" id="ytTimeDisplay">0:00 / 0:00</span>
+      <input type="range" class="yt-seek" id="ytSeek" min="0" max="100" value="0"
+             oninput="ytSeekTo(this.value)" onchange="ytSeekTo(this.value)">
+    </div>
+    <div class="yt-ab-row">
+      <span class="yt-ab-label">Loop A–B:</span>
+      <button class="btn-yt" onclick="ytSetA()">Marcar A</button>
+      <span class="yt-ab-time" id="labelA">–:––</span>
+      <button class="btn-yt" onclick="ytSetB()">Marcar B</button>
+      <span class="yt-ab-time" id="labelB">–:––</span>
+      <button class="btn-yt" id="btnLoop" onclick="ytToggleLoop()">Loop OFF</button>
+      <button class="btn-yt" onclick="ytClearAB()">Limpar</button>
+    </div>
+  </div>
+
+  <div class="lyrics-box" id="lyricsBox"></div>
+  <div class="player-areas" id="playerAreas"></div>
+  <div class="reveal-info" id="revealInfo"></div>
+  <div class="next-btn-wrap" id="nextBtnWrap" style="display:none">
+    <button class="btn btn-next" onclick="nextChord()">Próximo acorde →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ RESULT SCREEN ══════════════════ -->
+<div id="result" class="screen">
+  <div class="result-title">🏆 Fim de jogo!</div>
+  <div class="result-sub" id="resultSub"></div>
+  <ul class="ranking" id="ranking"></ul>
+  <div class="result-actions">
+    <button class="btn btn-save-song" id="btnSaveSong" onclick="saveCurrentSong()" style="display:none">
+      💾 Salvar esta música na biblioteca
+    </button>
+    <p id="saveConfirm">✓ Música salva na biblioteca!</p>
+    <button class="btn btn-restart" onclick="goSetup()">Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  TEORIA MUSICAL
+// ═══════════════════════════════════════════════════
+
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_ALIASES = { 'Db':'C#','Eb':'D#','Gb':'F#','Ab':'G#','Bb':'A#' };
+
+const MAJOR_FIELD = [
+  { semitones: 0,  quality: 'M'   },
+  { semitones: 2,  quality: 'm'   },
+  { semitones: 4,  quality: 'm'   },
+  { semitones: 5,  quality: 'M'   },
+  { semitones: 7,  quality: 'M'   },
+  { semitones: 9,  quality: 'm'   },
+  { semitones: 11, quality: 'dim' },
+];
+
+function normalizeNote(n) { return NOTE_ALIASES[n] || n; }
+function noteIndex(n) { return NOTES.indexOf(normalizeNote(n)); }
+
+function buildField(tonic) {
+  const base = noteIndex(tonic);
+  if (base === -1) return null;
+  return MAJOR_FIELD.map(({ semitones, quality }) => ({
+    note: NOTES[(base + semitones) % 12], quality
+  }));
+}
+
+function chordName({ note, quality }) {
+  if (quality === 'M')   return note;
+  if (quality === 'm')   return note + 'm';
+  if (quality === 'dim') return note + 'dim';
+  return note;
+}
+
+function parseChord(c) {
+  const m = c.match(/^([A-G][#b]?)(m(?!aj)|dim|M)?/);
+  if (!m) return null;
+  const root = normalizeNote(m[1]);
+  const qual = m[2] === 'm' ? 'm' : m[2] === 'dim' ? 'dim' : 'M';
+  return { root, quality: qual };
+}
+
+// ─── Slash chords (baixo invertido) ───
+
+function isSlashChord(chord) {
+  return /^[A-G][#b]?.*\/[A-G][#b]?$/.test(chord);
+}
+
+// Gera o pool de 6 inversões clássicas do campo harmônico maior:
+// I/3ª, I/5ª, IV/3ª, V/3ª, V/7ª, II/7ª
+function buildSlashPool(tonic) {
+  const base = noteIndex(tonic);
+  // Graus da escala maior: I II III IV V VI VII
+  const sc = [0, 2, 4, 5, 7, 9, 11].map(s => NOTES[(base + s) % 12]);
+  return [
+    `${sc[0]}/${sc[2]}`,   // I/3ª   ex: C/E
+    `${sc[0]}/${sc[4]}`,   // I/5ª   ex: C/G
+    `${sc[3]}/${sc[5]}`,   // IV/3ª  ex: F/A
+    `${sc[4]}/${sc[6]}`,   // V/3ª   ex: G/B
+    `${sc[4]}7/${sc[3]}`,  // V/7ª   ex: G7/F
+    `${sc[1]}m/${sc[0]}`,  // II/7ª  ex: Dm/C
+  ];
+}
+
+// ═══════════════════════════════════════════════════
+//  PARSER DE CIFRA
+// ═══════════════════════════════════════════════════
+
+const CHORD_RE = /^[A-G][#b]?(?:m(?:aj)?(?:7|9|11|13)?|dim(?:7)?|aug|sus[24]?|add\d+|M(?:aj)?)?(?:\d+)?(?:\/[A-G][#b]?)?$/;
+
+function isChordToken(w) { return CHORD_RE.test(w.trim()) && w.trim().length > 0; }
+
+function isChordLine(line) {
+  const words = line.trim().split(/\s+/).filter(w => w.length > 0);
+  return words.length > 0 && words.every(isChordToken);
+}
+
+function extractChordsFromLine(line) {
+  const result = []; const re = /\S+/g; let m;
+  while ((m = re.exec(line)) !== null)
+    if (isChordToken(m[0])) result.push({ chord: m[0], col: m.index });
+  return result;
+}
+
+function parseLyrics(text) {
+  // Formato inline [Acorde]
+  if (/\[[A-G][^\]]*\]/.test(text)) {
+    const blocks = [], chordList = [];
+    for (const line of text.split('\n')) {
+      const lr = /\[([^\]]+)\]/g; let ll = 0, lm, lyric = '';
+      const lineChords = [];
+      while ((lm = lr.exec(line)) !== null) {
+        lyric += line.slice(ll, lm.index);
+        lineChords.push({ chord: lm[1].trim(), col: lyric.length, idx: chordList.length + lineChords.length });
+        ll = lr.lastIndex;
+      }
+      lyric += line.slice(ll);
+      if (lineChords.length > 0) {
+        lineChords.forEach(c => chordList.push(c.chord));
+        blocks.push({ type: 'paired', chords: lineChords, lyric });
+      } else {
+        blocks.push({ type: 'text', value: line + '\n' });
+      }
+    }
+    return { blocks, chordList };
+  }
+
+  // Formato CifraClub
+  const lines = text.split('\n'), blocks = [], chordList = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.trim() === '') { blocks.push({ type: 'text', value: '\n' }); i++; continue; }
+    if (isChordLine(line)) {
+      const rawChords = extractChordsFromLine(line);
+      const hasLyric = i + 1 < lines.length && lines[i+1].trim() !== '' && !isChordLine(lines[i+1]);
+      const lyric = hasLyric ? lines[i+1] : '';
+      const chords = rawChords.map(({ chord, col }) => {
+        const idx = chordList.length; chordList.push(chord);
+        return { chord, col, idx };
+      });
+      blocks.push({ type: 'paired', chords, lyric });
+      i += hasLyric ? 2 : 1;
+    } else {
+      blocks.push({ type: 'text', value: line + '\n' }); i++;
+    }
+  }
+  return { blocks, chordList };
+}
+
+// ═══════════════════════════════════════════════════
+//  BIBLIOTECA (localStorage)
+// ═══════════════════════════════════════════════════
+
+const STORAGE_KEY = 'campo-harmonico-library';
+
+function libLoad() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+
+function libSave(songs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
+}
+
+function libAdd(song) {
+  const songs = libLoad();
+  songs.unshift({ ...song, id: Date.now().toString(), savedAt: new Date().toLocaleDateString('pt-BR') });
+  libSave(songs);
+}
+
+function libDelete(id) {
+  libSave(libLoad().filter(s => s.id !== id));
+}
+
+function libUpdate(id, patch) {
+  libSave(libLoad().map(s => s.id === id ? { ...s, ...patch } : s));
+}
+
+function renderLibrary() {
+  const songs = libLoad();
+  const el = document.getElementById('libList');
+  if (songs.length === 0) {
+    el.innerHTML = `<div class="lib-empty"><span>🎼</span>Nenhuma música salva ainda.<br>Crie uma nova música e salve na biblioteca.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="song-list">${songs.map(s => `
+    <div class="song-card">
+      <div class="song-card-info" onclick="openQuickStart('${s.id}')">
+        <div class="song-card-name">${escHtml(s.name || 'Sem nome')}</div>
+        <div class="song-card-meta">${s.ytUrl ? '🎬 YouTube · ' : ''}Salvo em ${s.savedAt}</div>
+      </div>
+      <div class="song-card-actions">
+        <button class="btn-icon" onclick="openQuickStart('${s.id}')">▶ Jogar</button>
+        <button class="btn-icon" onclick="editSong('${s.id}')">✏️ Editar</button>
+        <button class="btn-icon danger" onclick="deleteSong('${s.id}')">🗑</button>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function deleteSong(id) {
+  if (!confirm('Remover esta música da biblioteca?')) return;
+  libDelete(id);
+  renderLibrary();
+}
+
+function editSong(id) {
+  const song = libLoad().find(s => s.id === id);
+  if (!song) return;
+  // Preenche a aba "Nova música" com os dados para edição
+  document.getElementById('songName').value = song.name || '';
+  document.getElementById('ytUrl').value    = song.ytUrl || '';
+  document.getElementById('cifra').value    = song.cifra || '';
+  // Guarda o id sendo editado
+  document.getElementById('cifra').dataset.editingId = id;
+  switchTab('new');
+}
+
+// ─── Quick-start modal ───
+
+let _modalSongId = null;
+
+function openQuickStart(id) {
+  const song = libLoad().find(s => s.id === id);
+  if (!song) return;
+  _modalSongId = id;
+  document.getElementById('modalTitle').textContent = song.name || 'Música';
+  document.getElementById('modalSub').textContent   = song.ytUrl ? '🎬 Com YouTube' : '';
+  document.getElementById('modalError').style.display = 'none';
+  document.getElementById('quickModal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('quickModal').style.display = 'none';
+  _modalSongId = null;
+}
+
+function updateModalPlayerFields() {
+  const n = parseInt(document.getElementById('modalPlayers').value);
+  document.getElementById('mp2wrap').style.display = n >= 3 ? '' : 'none';
+}
+
+function startGameFromModal() {
+  const song = libLoad().find(s => s.id === _modalSongId);
+  if (!song) return;
+  const tom = document.getElementById('modalTom').value;
+  const n   = parseInt(document.getElementById('modalPlayers').value);
+  const names = [
+    document.getElementById('mp0').value.trim() || 'Jogador 1',
+    document.getElementById('mp1').value.trim() || 'Jogador 2',
+    document.getElementById('mp2').value.trim() || 'Jogador 3',
+  ].slice(0, n);
+  const err = document.getElementById('modalError');
+  err.style.display = 'none';
+  if (!tom) { err.textContent = 'Selecione o tom.'; err.style.display = 'block'; return; }
+  closeModal();
+  launchGame({ cifra: song.cifra, tom, names, ytUrl: song.ytUrl, songName: song.name, fromLibId: song.id });
+}
+
+// ═══════════════════════════════════════════════════
+//  ESTADO DO JOGO
+// ═══════════════════════════════════════════════════
+
+let state = {};
+
+function startGameFromForm() {
+  const cifraText = document.getElementById('cifra').value.trim();
+  const tom       = document.getElementById('tom').value;
+  const n         = parseInt(document.getElementById('numPlayers').value);
+  const names     = [
+    document.getElementById('p0').value.trim() || 'Jogador 1',
+    document.getElementById('p1').value.trim() || 'Jogador 2',
+    document.getElementById('p2').value.trim() || 'Jogador 3',
+  ].slice(0, n);
+  const ytUrl     = document.getElementById('ytUrl').value.trim();
+  const songName  = document.getElementById('songName').value.trim();
+  const editingId = document.getElementById('cifra').dataset.editingId;
+
+  const err = document.getElementById('errorMsg');
+  err.style.display = 'none';
+  if (!cifraText) { showError('Cole a cifra da música.'); return; }
+  if (!tom)       { showError('Selecione o tom da música.'); return; }
+
+  // Se estava editando uma música da biblioteca, atualiza ela
+  if (editingId) {
+    libUpdate(editingId, { name: songName, cifra: cifraText, ytUrl });
+    delete document.getElementById('cifra').dataset.editingId;
+  }
+
+  launchGame({ cifra: cifraText, tom, names, ytUrl, songName, fromLibId: editingId || null });
+}
+
+function launchGame({ cifra, tom, names, ytUrl, songName, fromLibId }) {
+  const field = buildField(tom);
+  if (!field) { showError('Tom inválido.'); return; }
+
+  const { blocks, chordList } = parseLyrics(cifra);
+  if (chordList.length === 0) {
+    showError('Nenhum acorde encontrado. Cole a cifra no formato CifraClub.');
+    return;
+  }
+
+  const fieldNames = field.map(chordName);
+  const slashPool  = buildSlashPool(tom);
+  const chords = chordList.map(correct => ({
+    chord: correct, options: buildOptions(correct, fieldNames, slashPool)
+  }));
+
+  state = {
+    blocks, chords,
+    field: fieldNames, tom,
+    songName: songName || '',
+    cifra,
+    ytUrl: ytUrl || '',
+    fromLibId: fromLibId || null,
+    players: names.map(name => ({ name, score: 0 })),
+    current: 0,
+    phase: 'choosing',
+    choices: {},
+  };
+
+  renderGame();
+  show('game');
+
+  const ytId = ytUrl ? extractYtId(ytUrl) : null;
+  if (ytId) ytInit(ytId);
+  else document.getElementById('ytPanel').style.display = 'none';
+}
+
+function buildOptions(correct, fieldNames, slashPool) {
+  // Acorde com baixo invertido → opções só de inversões
+  if (isSlashChord(correct)) {
+    // Usa o acorde exato se estiver no pool, senão inclui mesmo assim
+    const correctOption = slashPool.includes(correct) ? correct : correct;
+    const others = slashPool.filter(s => s !== correctOption);
+    shuffle(others);
+    const opts = [correctOption, ...others.slice(0, 2)];
+    shuffle(opts);
+    return { list: opts, correct: correctOption };
+  }
+
+  // Acorde normal → opções do campo harmônico
+  const parsed = parseChord(correct);
+  let correctInField = fieldNames.find(f => f === correct);
+  if (!correctInField && parsed)
+    correctInField = fieldNames.find(f => {
+      const fp = parseChord(f);
+      return fp && fp.root === parsed.root && fp.quality === parsed.quality;
+    });
+  const correctOption = correctInField || correct;
+  const others = fieldNames.filter(f => f !== correctOption);
+  shuffle(others);
+  const opts = [correctOption, ...others.slice(0, 2)];
+  shuffle(opts);
+  return { list: opts, correct: correctOption };
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════
+
+function renderGame() {
+  renderScoreboard();
+  renderLyrics();
+  renderPlayerAreas();
+  renderRevealInfo();
+  document.getElementById('gameTitle').textContent = state.songName || 'Campo Harmônico';
+  document.getElementById('gameMeta').textContent  = `Tom de ${state.tom} · ${state.chords.length} acordes`;
+}
+
+function renderScoreboard() {
+  document.getElementById('scoreboard').innerHTML = state.players.map(p => `
+    <div class="score-card">
+      <div class="sc-name">${p.name}</div>
+      <div class="sc-pts">${p.score}</div>
+    </div>`).join('');
+}
+
+function chordTokenHTML(idx) {
+  const cur = state.current, chord = state.chords[idx].chord;
+  let cls = 'chord-token', label = '?';
+  if (idx < cur) { cls += ' revealed'; label = chord; }
+  else if (idx === cur) {
+    if (state.phase === 'revealed') { cls += ' revealed'; label = chord; }
+    else cls += ' current-chord';
+  } else { cls += ' hidden-chord'; }
+  return `<span class="${cls}">${label}</span>`;
+}
+
+function renderLyrics() {
+  document.getElementById('lyricsBox').innerHTML = state.blocks.map(block => {
+    if (block.type === 'text') return `<span>${block.value.replace(/\n/g,'<br>')}</span>`;
+    let chordRow = '', cursor = 0;
+    for (const { chord, col, idx } of block.chords) {
+      chordRow += ' '.repeat(Math.max(0, col - cursor));
+      chordRow += chordTokenHTML(idx);
+      cursor = col + chord.length;
+    }
+    return `<div class="cl-pair">
+      <div class="cl-chord-row">${chordRow}</div>
+      <div class="cl-lyric-row">${block.lyric || '&nbsp;'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPlayerAreas() {
+  const cur = state.chords[state.current];
+  document.getElementById('playerAreas').innerHTML = state.players.map((p, pi) => {
+    const chosen = state.choices[pi], isRevealed = state.phase === 'revealed';
+    let sc = 'waiting', sl = 'aguardando';
+    if (chosen !== undefined) {
+      if (!isRevealed) { sc = 'chosen'; sl = 'escolheu'; }
+      else if (cur.options.list[chosen] === cur.options.correct) { sc = 'correct'; sl = '✓ acertou!'; }
+      else { sc = 'wrong'; sl = '✗ errou'; }
+    }
+    const optBtns = cur.options.list.map((opt, oi) => {
+      let cls = 'option-btn', dis = '';
+      if (chosen !== undefined) dis = 'disabled';
+      if (isRevealed) {
+        if (opt === cur.options.correct) cls += ' correct-answer';
+        else if (chosen === oi) cls += ' wrong-answer';
+      } else if (chosen === oi) cls += ' selected';
+      return `<button class="${cls}" ${dis} onclick="choose(${pi},${oi})">${opt}</button>`;
+    }).join('');
+    return `<div class="player-area ${chosen !== undefined && !isRevealed ? 'locked' : ''}">
+      <div class="pa-name">${p.name} <span class="pa-status ${sc}">${sl}</span></div>
+      <div class="options-grid">${optBtns}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderRevealInfo() {
+  const info = document.getElementById('revealInfo');
+  const wrap = document.getElementById('nextBtnWrap');
+  const isLast = state.current >= state.chords.length - 1;
+  if (state.phase === 'revealed') {
+    info.innerHTML = `O acorde correto era <strong>${state.chords[state.current].options.correct}</strong>.`;
+    wrap.style.display = 'block';
+    document.querySelector('.btn-next').textContent = isLast ? '🏆 Ver resultado' : 'Próximo acorde →';
+  } else {
+    info.innerHTML = '';
+    wrap.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  LÓGICA DE JOGO
+// ═══════════════════════════════════════════════════
+
+function choose(playerIndex, optionIndex) {
+  if (state.choices[playerIndex] !== undefined || state.phase === 'revealed') return;
+  state.choices[playerIndex] = optionIndex;
+  if (state.players.every((_, i) => state.choices[i] !== undefined)) reveal();
+  else renderPlayerAreas();
+}
+
+function reveal() {
+  state.phase = 'revealed';
+  state.players.forEach((p, i) => {
+    const c = state.choices[i];
+    if (c !== undefined && state.chords[state.current].options.list[c] === state.chords[state.current].options.correct)
+      p.score++;
+  });
+  renderGame();
+}
+
+function nextChord() {
+  if (state.current >= state.chords.length - 1) { showResult(); return; }
+  state.current++;
+  state.phase = 'choosing';
+  state.choices = {};
+  renderGame();
+}
+
+function showResult() {
+  const sorted = [...state.players].sort((a, b) => b.score - a.score);
+  document.getElementById('resultSub').textContent =
+    `${state.songName ? state.songName + ' · ' : ''}${state.chords.length} acordes · Tom de ${state.tom}`;
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('ranking').innerHTML = sorted.map((p, i) => `
+    <li>
+      <span class="rank-pos">${medals[i] || (i+1)+'º'}</span>
+      <span class="rank-name">${p.name}</span>
+      <span class="rank-pts">${p.score} pt${p.score !== 1 ? 's' : ''}</span>
+    </li>`).join('');
+
+  // Botão salvar: só aparece se a música ainda não está na biblioteca
+  const btnSave = document.getElementById('btnSaveSong');
+  document.getElementById('saveConfirm').style.display = 'none';
+  if (state.fromLibId) {
+    btnSave.style.display = 'none'; // já está na biblioteca
+  } else {
+    btnSave.style.display = 'inline-flex';
+  }
+
+  show('result');
+}
+
+function saveToLibraryFromForm() {
+  const cifra    = document.getElementById('cifra').value.trim();
+  const songName = document.getElementById('songName').value.trim();
+  const ytUrl    = document.getElementById('ytUrl').value.trim();
+  const err      = document.getElementById('errorMsg');
+  const confirm  = document.getElementById('formSaveConfirm');
+  err.style.display = 'none';
+  confirm.style.display = 'none';
+  if (!cifra)    { err.textContent = 'Cole a cifra antes de salvar.'; err.style.display = 'block'; return; }
+  if (!songName) { err.textContent = 'Dê um nome para a música antes de salvar.'; err.style.display = 'block'; return; }
+  const editingId = document.getElementById('cifra').dataset.editingId;
+  if (editingId) {
+    libUpdate(editingId, { name: songName, cifra, ytUrl });
+    delete document.getElementById('cifra').dataset.editingId;
+  } else {
+    libAdd({ name: songName, cifra, ytUrl });
+  }
+  confirm.style.display = 'block';
+}
+
+function saveCurrentSong() {
+  libAdd({ name: state.songName, cifra: state.cifra, ytUrl: state.ytUrl });
+  document.getElementById('btnSaveSong').style.display = 'none';
+  document.getElementById('saveConfirm').style.display = 'block';
+  state.fromLibId = 'saved'; // evita salvar duas vezes
+}
+
+// ═══════════════════════════════════════════════════
+//  UTILIDADES UI
+// ═══════════════════════════════════════════════════
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goSetup() {
+  ytDestroy();
+  renderLibrary();
+  show('setup');
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function updatePlayerFields() {
+  document.getElementById('p2wrap').style.display =
+    parseInt(document.getElementById('numPlayers').value) >= 3 ? '' : 'none';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', (i === 0 && tab === 'lib') || (i === 1 && tab === 'new')));
+  document.getElementById('tab-lib').classList.toggle('active', tab === 'lib');
+  document.getElementById('tab-new').classList.toggle('active', tab === 'new');
+  if (tab === 'lib') renderLibrary();
+}
+
+// ═══════════════════════════════════════════════════
+//  YOUTUBE PLAYER
+// ═══════════════════════════════════════════════════
+
+let yt = { player: null, ready: false, pointA: null, pointB: null, loopOn: false, ticker: null, seeking: false };
+
+function extractYtId(url) {
+  url = url.trim();
+  let m = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/); if (m) return m[1];
+  m = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);          if (m) return m[1];
+  m = url.match(/\/embed\/([A-Za-z0-9_-]{11})/);        if (m) return m[1];
+  m = url.match(/^([A-Za-z0-9_-]{11})$/);               if (m) return m[1];
+  return null;
+}
+
+function ytInit(videoId) {
+  document.getElementById('ytPanel').style.display = 'block';
+  if (!window.YT) {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+    window._ytPendingId = videoId;
+    return;
+  }
+  ytCreatePlayer(videoId);
+}
+
+window.onYouTubeIframeAPIReady = function () {
+  if (window._ytPendingId) { ytCreatePlayer(window._ytPendingId); window._ytPendingId = null; }
+};
+
+function ytCreatePlayer(videoId) {
+  if (yt.player) { try { yt.player.destroy(); } catch(e){} yt.player = null; }
+  yt.ready = false; yt.pointA = null; yt.pointB = null; yt.loopOn = false;
+  ytUpdateABUI();
+  yt.player = new YT.Player('ytPlayer', {
+    videoId,
+    playerVars: { rel: 0, modestbranding: 1, controls: 0 },
+    events: {
+      onReady(e) {
+        yt.ready = true;
+        document.getElementById('ytSeek').max = Math.floor(e.target.getDuration());
+        ytStartTicker();
+      },
+      onStateChange(e) {
+        document.getElementById('btnPlayPause').textContent =
+          e.data === YT.PlayerState.PLAYING ? '⏸' : '▶';
+      },
+      onError() {
+        document.getElementById('ytPanel').innerHTML =
+          '<p class="yt-no-video">Não foi possível carregar o vídeo (embedding desativado pelo canal).</p>';
+      },
+    },
+  });
+}
+
+function ytStartTicker() {
+  clearInterval(yt.ticker);
+  yt.ticker = setInterval(() => {
+    if (!yt.ready || !yt.player) return;
+    const t = yt.player.getCurrentTime(), dur = yt.player.getDuration() || 1;
+    if (yt.loopOn && yt.pointA !== null && yt.pointB !== null && t >= yt.pointB) {
+      yt.player.seekTo(yt.pointA, true); return;
+    }
+    if (!yt.seeking) document.getElementById('ytSeek').value = Math.floor(t);
+    document.getElementById('ytTimeDisplay').textContent = `${fmtTime(t)} / ${fmtTime(dur)}`;
+  }, 500);
+}
+
+function ytTogglePlay() {
+  if (!yt.ready) return;
+  yt.player.getPlayerState() === YT.PlayerState.PLAYING ? yt.player.pauseVideo() : yt.player.playVideo();
+}
+
+function ytSeekTo(val) {
+  if (!yt.ready) return;
+  yt.seeking = true;
+  yt.player.seekTo(parseFloat(val), true);
+  setTimeout(() => { yt.seeking = false; }, 300);
+}
+
+function ytSetA() {
+  if (!yt.ready) return;
+  yt.pointA = yt.player.getCurrentTime();
+  const el = document.getElementById('labelA');
+  el.textContent = fmtTime(yt.pointA); el.classList.add('set');
+}
+
+function ytSetB() {
+  if (!yt.ready) return;
+  yt.pointB = yt.player.getCurrentTime();
+  const el = document.getElementById('labelB');
+  el.textContent = fmtTime(yt.pointB); el.classList.add('set');
+}
+
+function ytToggleLoop() {
+  yt.loopOn = !yt.loopOn;
+  const btn = document.getElementById('btnLoop');
+  btn.textContent = yt.loopOn ? 'Loop ON' : 'Loop OFF';
+  btn.classList.toggle('active', yt.loopOn);
+}
+
+function ytClearAB() {
+  yt.pointA = null; yt.pointB = null; yt.loopOn = false; ytUpdateABUI();
+}
+
+function ytUpdateABUI() {
+  document.getElementById('labelA').textContent = '–:––'; document.getElementById('labelA').classList.remove('set');
+  document.getElementById('labelB').textContent = '–:––'; document.getElementById('labelB').classList.remove('set');
+  document.getElementById('btnLoop').textContent = 'Loop OFF'; document.getElementById('btnLoop').classList.remove('active');
+}
+
+function ytDestroy() {
+  clearInterval(yt.ticker);
+  if (yt.player) { try { yt.player.destroy(); } catch(e){} yt.player = null; }
+  yt.ready = false;
+  document.getElementById('ytPanel').style.display = 'none';
+  const wrap = document.querySelector('#ytPanel .yt-embed-wrap');
+  if (wrap) wrap.innerHTML = '<div id="ytPlayer"></div>';
+}
+
+function fmtTime(s) {
+  s = Math.floor(s || 0);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+// ─── Init ───
+renderLibrary();
+</script>
+</body>
+</html>
