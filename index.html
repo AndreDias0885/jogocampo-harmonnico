@@ -159,28 +159,32 @@
 
   .game-header {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
   }
-  .game-title { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
-  .game-meta { color: var(--muted); font-size: .85rem; }
+  .game-title { font-size: 1rem; font-weight: 700; color: var(--accent2); }
+  .game-meta { color: var(--muted); font-size: .8rem; }
 
-  .scoreboard { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .scoreboard { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .score-card {
     background: var(--surface);
     border-radius: var(--radius);
-    padding: 10px 16px;
-    flex: 1; min-width: 100px;
+    padding: 6px 14px;
+    flex: 1; min-width: 80px;
     border: 2px solid transparent;
+    display: flex; align-items: center; gap: 8px;
   }
-  .score-card .sc-name { font-size: .8rem; color: var(--muted); font-weight: 600; }
-  .score-card .sc-pts { font-size: 1.6rem; font-weight: 800; }
+  .score-card .sc-name { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  .score-card .sc-pts { font-size: 1.3rem; font-weight: 800; }
 
   .lyrics-box {
     background: var(--surface);
     border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 24px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
     font-size: 1rem;
+    max-height: 38vh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
   }
   /* Cada linha da cifra = segmentos inline empilhados (acorde em cima, sílaba embaixo) */
   .cl-pair { display: block; margin-bottom: 8px; }
@@ -223,35 +227,35 @@
     50%       { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
   }
 
-  .player-areas { display: flex; gap: 16px; flex-wrap: wrap; }
+  .player-areas { display: flex; gap: 10px; flex-wrap: wrap; }
   .player-area {
-    flex: 1; min-width: 200px;
+    flex: 1; min-width: 150px;
     background: var(--surface);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 10px 12px;
     border: 2px solid var(--surface2);
   }
   .player-area.locked { opacity: .6; }
   .player-area .pa-name {
-    font-size: .85rem; font-weight: 700; color: var(--muted);
+    font-size: .78rem; font-weight: 700; color: var(--muted);
     text-transform: uppercase; letter-spacing: .06em;
-    margin-bottom: 12px;
-    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
   }
-  .pa-status { font-size: .75rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .pa-status { font-size: .7rem; padding: 2px 6px; border-radius: 99px; font-weight: 600; }
   .pa-status.waiting { background: var(--surface2); color: var(--muted); }
   .pa-status.chosen  { background: #164e63; color: #67e8f9; }
   .pa-status.correct { background: #14532d; color: #86efac; }
   .pa-status.wrong   { background: #450a0a; color: #fca5a5; }
 
-  .options-grid { display: flex; flex-direction: column; gap: 8px; }
+  .options-grid { display: flex; flex-direction: column; gap: 6px; }
   .option-btn {
     background: var(--surface2);
     border: 2px solid var(--surface2);
     color: var(--text);
     border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 1rem; font-weight: 700; font-family: inherit;
+    padding: 8px 10px;
+    font-size: .95rem; font-weight: 700; font-family: inherit;
     cursor: pointer; text-align: center;
     transition: background .15s, border-color .15s, transform .1s;
   }
@@ -261,10 +265,10 @@
   .option-btn.correct-answer{ background: var(--green); border-color: var(--green); color: #fff; }
   .option-btn.wrong-answer  { background: var(--red);   border-color: var(--red);   color: #fff; }
 
-  .reveal-info { text-align: center; margin-top: 20px; color: var(--muted); font-size: .9rem; }
+  .reveal-info { text-align: center; margin-top: 10px; color: var(--muted); font-size: .85rem; }
   .reveal-info strong { color: var(--text); }
-  .next-btn-wrap { text-align: center; margin-top: 20px; }
-  .btn-next { background: var(--accent); color: #fff; padding: 12px 36px; font-size: 1rem; }
+  .next-btn-wrap { text-align: center; margin-top: 10px; }
+  .btn-next { background: var(--accent); color: #fff; padding: 10px 32px; font-size: .95rem; }
 
   /* ── RESULT ── */
   #result { max-width: 500px; margin: 60px auto; text-align: center; }
@@ -294,13 +298,13 @@
   .yt-panel {
     background: var(--surface);
     border-radius: var(--radius);
-    padding: 14px 16px;
-    margin-bottom: 16px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
     border: 1.5px solid var(--surface2);
   }
   .yt-embed-wrap {
-    position: relative; width: 100%; padding-top: 30%;
-    background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 12px;
+    position: relative; width: 100%; padding-top: 22%;
+    background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 8px;
   }
   .yt-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
   .yt-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -971,6 +975,12 @@ function renderLyrics() {
 
     return `<div class="cl-pair">${html}</div>`;
   }).join('');
+
+  // Rola a caixa de letra para o acorde atual ficar visível
+  setTimeout(() => {
+    const cur = document.querySelector('#lyricsBox .current-chord');
+    if (cur) cur.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 50);
 }
 
 function renderPlayerAreas() {
